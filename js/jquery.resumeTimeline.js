@@ -3,61 +3,146 @@
   var widget = {
     options: {
       data: undefined,
+      margins: {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 20
+      },
       styles: {
-        prefix: 'resume-timeline', 
+        prefix: 'resume-timeline-', 
         svg: 'svg',
-        vizContainer: 'viz-container'
+        vizContainer: 'viz-container',
+        itemsContainer: 'items-container',
+        yearsContainer: 'years-container'
       },
       resizeDelay: 250
+    },
+    elements: {},
+    data: {
+      resumeData: [],
+      dates: {}
     },
 
     _create: function() {
       var elements = this.elements = {},
         container = elements.container = this.element,
         styles = this.options.styles,
-        resizeTimeout, _this = this;
+        resizeTimeout, self = this;
 
       elements.svg = d3
         .select(container.get(0))
           .append('svg')
-            .attr('class', styles.prefix + '-' + styles.svg);
+            .attr('class', styles.prefix + styles.svg);
 
       elements.vizContainer = elements.svg
         .append('g')
-          .attr('class', styles.prefix + '-' + styles.vizContainer);
+          .attr('class', styles.prefix + styles.vizContainer);
 
-      this.render();
+      elements.itemsContainer = elements.vizContainer
+        .append('g')
+          .attr('class', styles.prefix + styles.itemsContainer);
+
+      elements.yearsContainer = elements.vizContainer
+        .append('g')
+          .attr('class', styles.prefix + styles.yearsContainer);
+
+      if(self.options.data != undefined) {
+        self._prepareData(self.options.data);
+        self._buildTimeline()
+      }
+
+      self.render();
 
       $(window).resize(function() {
         if(resizeTimeout) {
           clearInterval(resizeTimeout);
         }
         resizeTimeout = setTimeout(function() {
-          _this.render();
-        }, _this.options.resizeDelay);
+          self.render();
+        }, self.options.resizeDelay);
       });
 
     },
 
+    _prepareData: function(userData) {
+      var self = this,
+        data = self.data = {},
+        resumeData = userData.slice(0),
+        min = Infinity,
+        max = -Infinity,
+        maxDate, minDate, i, item, minYear;
+
+      data.resumeData = resumeData
+      for(i = 0; i < resumeData.length; i++) {
+        item = resumeData[i];
+        item['startDateObj'] = new Date(item['startDate']);
+        if(item['startDateObj'].getTime() < min) {
+          min = item['startDateObj'].getTime();
+          minDate = item['startDateObj'];
+        }
+        item['endDateObj'] = new Date(item['endDate']);
+        if(item['endDateObj'].getTime() > max)
+          max = item['endDateObj'].getTime();
+          maxDate = item['endDateObj'];
+      }
+
+      data.dates = {
+        minYearStart: new Date("January 01 " + minDate.getFullYear()),
+        maxYearEnd: new Date(maxDate.getFullYear(), 11, 31, 23, 59, 59, 999),
+        years: []
+      }
+      minYear = data.dates.minYearStart;
+      while(minYear.getTime() <= data.dates.maxYearEnd.getTime()) {
+        data.dates.years.push(new Date(minYear.getFullYear(), 0));
+        minYear = new Date(minYear.getFullYear() + 1, 0);
+      }
+    },
+
+    _buildTimeline: function() {
+      if(this.data.resumeData.length > 0) {
+        this.elements.itemsContainer
+          .selectAll("rect")
+            .data(this.data.resumeData)
+            .enter().append("rect")
+        this.elements.yearsContainer
+          .selectAll("rect")
+            .data(this.data.dates.years)
+            .enter().append("rect")
+      }
+    },
+
+    setOptions: function(options) {
+      $.extend(true, this.options, options);
+      if(options.data != undefined) {
+        this.options.data = options.data;
+      }
+      this._prepareData(this.options.data);
+      this._buildTimeline();
+      this.render();
+    },
+
+    resize: function() {
+      this.render();
+    },
+
     render: function() {
-      var margin = {
-          top: 20,
-          right: 20,
-          bottom: 20,
-          left: 20
-        },
-        elements = this.elements,
+      var elements = this.elements,
+        options = this.options,
+        margins = options.margins,
         availableWidth = elements.container.innerWidth(),
         availableHeight = elements.container.innerHeight(),
-        width = availableWidth - margin.left - margin.right,
-        height = availableHeight - margin.top - margin.bottom;
+        width = availableWidth - margins.left - margins.right,
+        height = availableHeight - margins.top - margins.bottom;
 
       elements.svg
         .attr('width', availableWidth)
         .attr('height', availableHeight);
 
       elements.vizContainer
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')')
+        .attr('width', width)
+        .attr('height', height);
       
     },
 
