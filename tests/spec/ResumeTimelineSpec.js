@@ -100,20 +100,26 @@ $(document).ready(function() {
           {
             "title": "Education",
             "location": "Boston, MA",
-            "startDate": "01 September 2003",
-            "endDate": "01 June 2009"
+            "startDate": "01 January 2003",
+            "endDate": "01 June 2003"
           },
           {
             "title": "Internship",
             "location": "Lexington, MA",
-            "startDate": "01 June 2008",
-            "endDate": "31 August 2008"
+            "startDate": "01 January 2004",
+            "endDate": "31 August 2004"
           }
         ];
 
       element.resumeTimeline({
         styles: styles,
-        data: data
+        data: data,
+        margins: {
+          top: 10,
+          right: 10,
+          bottom: 10,
+          left: 10
+        }
       });
 
       it("should create rect elements for each data item", function() {
@@ -123,10 +129,19 @@ $(document).ready(function() {
 
       it("should create rect elements for each year in the timeline range", function() {
         var years = element.find("g." + styles.yearsContainer).find("rect");
-        expect(years.length).toEqual(6);
+        expect(years.length).toEqual(2);
       });
 
-      element.remove();
+      it("should set rect elements to the right width", function() {
+        var years = element.find("g." + styles.yearsContainer).find("rect");
+        for(var i = 0; i < years.length; i++) {
+          expect(Math.round($(years[i]).attr('width'))).toEqual(190);
+        }
+        this.after(function() {
+          element.remove();
+        });
+      });
+
     });
 
 

@@ -101,11 +101,11 @@
 
     _buildTimeline: function() {
       if(this.data.resumeData.length > 0) {
-        this.elements.itemsContainer
+        this.elements.items = this.elements.itemsContainer
           .selectAll("rect")
             .data(this.data.resumeData)
             .enter().append("rect")
-        this.elements.yearsContainer
+        this.elements.years = this.elements.yearsContainer
           .selectAll("rect")
             .data(this.data.dates.years)
             .enter().append("rect")
@@ -133,7 +133,16 @@
         availableWidth = elements.container.innerWidth(),
         availableHeight = elements.container.innerHeight(),
         width = availableWidth - margins.left - margins.right,
-        height = availableHeight - margins.top - margins.bottom;
+        height = availableHeight - margins.top - margins.bottom,
+        timeScale = d3.time.scale();
+      var dimensions = {
+        width: width,
+        height: height
+      };
+
+      var orientation = this._determineOrientation();
+      timeScale.domain([this.data.dates.minYearStart, this.data.dates.maxYearEnd]);
+      timeScale.range([0, dimensions[orientation.primaryDimension]]);
 
       elements.svg
         .attr('width', availableWidth)
@@ -143,14 +152,45 @@
         .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')')
         .attr('width', width)
         .attr('height', height);
-      
+
+      if(this.data.resumeData.length) { 
+      elements.years
+        .transition(300)
+        .attr('width', function(d, i) {
+          var endDate = new Date(d.getFullYear() + 1, 0, 1);
+          var endDate = new Date(endDate.getTime() - 1);
+          var size = timeScale(endDate) - timeScale(d);
+          return size;
+        })
+        .attr('height', '10')
+        .attr(orientation.primaryAxis, function(d, i) {
+          return timeScale(d);
+        })
+        .attr(orientation.secondaryAxis, 0)
+      }
     },
 
     _determineOrientation: function() {
       var height = this.element.innerHeight(),
         width = this.element.innerWidth(),
         orientation = height > width ? 'portrait' : 'landscape';
-      return orientation;
+      var options = {
+        portrait: {
+          primaryDimension: 'height',
+          primaryAxis: 'y',
+          secondaryDimension: 'width',
+          secondaryAxis: 'x',
+          rotateYears: 45
+        },
+        landscape: {
+          primaryDimension: 'width',
+          primaryAxis: 'x',
+          secondaryDimension: 'height',
+          secondaryAxis: 'y',
+          rotateYears: 0
+        }
+      };
+      return options[orientation];
     }
 
 
